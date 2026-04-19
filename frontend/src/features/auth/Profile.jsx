@@ -3,55 +3,49 @@ import { AuthContext } from "../../contexts/AuthContext";
 
 export default function Profile() {
   const { user } = useContext(AuthContext);
-
   if (!user) return null;
 
+  const initial = (user.name?.charAt(0) || user.email?.charAt(0) || "?").toUpperCase();
+
   return (
-    <div className="flex-1 animate-page-in">
-      <div className="page-container py-8 flex flex-col gap-6 mx-auto max-w-2xl">
-        
+    <div className="flex-1">
+      <div className="page-container py-6 flex flex-col gap-6">
+
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-aurora-1 to-aurora-3 bg-clip-text text-transparent tracking-tight">Account Profile</h1>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Identity & Configuration</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Profile</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Account information</p>
         </div>
 
-        {/* Profile Card */}
-        <div className="glass-panel overflow-hidden">
-          {/* Avatar Area */}
-          <div className="p-8 flex items-center gap-6 border-b border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md">
-            <div className="w-24 h-24 bg-gradient-to-br from-aurora-1 to-aurora-3 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-aurora-1/20">
-              <span className="text-3xl font-bold">
-                {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
-              </span>
+        {/* Card — capped at max-w-2xl for readability */}
+        <div className="glass-panel overflow-hidden max-w-2xl">
+          {/* Avatar banner */}
+          <div className="p-6 flex items-center gap-5 border-b border-slate-200/40 dark:border-white/[0.06] bg-white/30 dark:bg-white/[0.03]">
+            <div className="w-16 h-16 bg-gradient-to-br from-aurora-1 to-aurora-3 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-aurora-1/20">
+              <span className="text-2xl font-bold">{initial}</span>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">{user.name || "Unidentified User"}</h2>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{user.email}</p>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white">{user.name || "User"}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
             </div>
           </div>
-          
+
           {/* Details */}
-          <div className="p-8">
-            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-6">
-              Personal Details
-            </h3>
-            
-            <div className="flex flex-col gap-5">
-              {/* Name Field */}
-              <div className="flex flex-col sm:flex-row sm:items-center pb-5 border-b border-slate-200/50 dark:border-slate-700/50 gap-2 sm:gap-6">
-                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 w-32 shrink-0">Designation</span>
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.name || "UNIDENTIFIED"}</span>
-              </div>
-              
-              {/* Email Field */}
-              <div className="flex flex-col sm:flex-row sm:items-center pb-2 gap-2 sm:gap-6">
-                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 w-32 shrink-0">Comms Link</span>
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.email}</span>
-              </div>
+          <div className="p-6 space-y-5">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Details</h3>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 pb-4 border-b border-slate-200/40 dark:border-white/[0.06]">
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400 w-28 shrink-0">Name</span>
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{user.name || "—"}</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6">
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400 w-28 shrink-0">Email</span>
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{user.email}</span>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

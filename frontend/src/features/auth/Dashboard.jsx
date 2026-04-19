@@ -21,213 +21,156 @@ import {
   Plus, Circle, Zap, CheckCheck, Search, X, ClipboardList, Clock, CheckCircle2, ListTodo,
 } from "lucide-react";
 
+/* ── Column definitions ─────────────────────────────────── */
 const COLUMNS = [
-  {
-    id: "todo",
-    label: "To Do",
-    icon: <Circle className="w-3.5 h-3.5" />,
-    dotColor: "bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.5)]",
-    emptyText: "No tasks here.",
-  },
-  {
-    id: "inProgress",
-    label: "In Progress",
-    icon: <Zap className="w-3.5 h-3.5" />,
-    dotColor: "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]",
-    emptyText: "Drag a task here to start.",
-  },
-  {
-    id: "done",
-    label: "Done",
-    icon: <CheckCheck className="w-3.5 h-3.5" />,
-    dotColor: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]",
-    emptyText: "Completed tasks appear here.",
-  },
+  { id: "todo",       label: "To Do",        icon: Circle,     dot: "bg-slate-400",    empty: "No tasks yet" },
+  { id: "inProgress", label: "In Progress",   icon: Zap,        dot: "bg-amber-400",    empty: "Drag a task here" },
+  { id: "done",       label: "Done",          icon: CheckCheck,  dot: "bg-emerald-500",  empty: "Completed tasks" },
 ];
 
 const FILTER_CHIPS = [
-  { id: "high",     label: "High priority" },
-  { id: "medium",   label: "Medium priority" },
-  { id: "low",      label: "Low priority" },
+  { id: "high",     label: "High" },
+  { id: "medium",   label: "Medium" },
+  { id: "low",      label: "Low" },
   { id: "dueToday", label: "Due today" },
   { id: "overdue",  label: "Overdue" },
 ];
 
+/* ── Component ──────────────────────────────────────────── */
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTask, setActiveTask] = useState(null);
-  const [editingTask, setEditingTask] = useState(null);
+  const [isModalOpen, setIsModalOpen]   = useState(false);
+  const [activeTask, setActiveTask]     = useState(null);
+  const [editingTask, setEditingTask]   = useState(null);
   const [taskToDelete, setTaskToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("manual");
+  const [isDeleting, setIsDeleting]     = useState(false);
+  const [searchQuery, setSearchQuery]   = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy]             = useState("manual");
   const [activeFilters, setActiveFilters] = useState([]);
-  const [tasks, setTasks] = useState({ todo: [], inProgress: [], done: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [tasks, setTasks]               = useState({ todo: [], inProgress: [], done: [] });
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState(null);
 
+  /* fetch tasks */
   useEffect(() => {
-    const fetchTasks = async () => {
+    (async () => {
       setLoading(true);
       setError(null);
       try {
         const res = await api.get("/tasks");
-        const grouped = { todo: [], inProgress: [], done: [] };
-        res.data.forEach((task) => {
-          if (grouped[task.status] !== undefined) grouped[task.status].push(task);
-        });
-        setTasks(grouped);
+        const g = { todo: [], inProgress: [], done: [] };
+        res.data.forEach((t) => { if (g[t.status] !== undefined) g[t.status].push(t); });
+        setTasks(g);
       } catch (err) {
-        if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          navigate("/login");
-        } else {
-          const msg = err.response?.data?.msg || "Failed to load tasks.";
-          setError(msg);
-          toast.error(msg);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTasks();
+        if (err.response?.status === 401) { localStorage.removeItem("token"); navigate("/login"); }
+        else { const m = err.response?.data?.msg || "Failed to load tasks."; setError(m); toast.error(m); }
+      } finally { setLoading(false); }
+    })();
   }, [navigate]);
 
+  /* debounced search */
   useEffect(() => {
-    const h = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    const h = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(h);
   }, [searchQuery]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const handleAddTask = (newTask) => {
-    setTasks((prev) => ({ ...prev, todo: [{ ...newTask, id: Date.now() }, ...prev.todo] }));
+  /* handlers */
+  const handleAddTask = (t) => {
+    setTasks((p) => ({ ...p, todo: [{ ...t, id: Date.now() }, ...p.todo] }));
     toast.success("Task created!");
   };
 
-  const handleOpenEdit = (task) => { setEditingTask(task); setIsModalOpen(true); };
-  const handleCloseModal = () => { setIsModalOpen(false); setEditingTask(null); };
-  const toggleFilter = (id) => setActiveFilters((prev) => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+  const openEdit = (t) => { setEditingTask(t); setIsModalOpen(true); };
+  const closeModal = () => { setIsModalOpen(false); setEditingTask(null); };
+  const toggleFilter = (id) => setActiveFilters((p) => p.includes(id) ? p.filter(f => f !== id) : [...p, id]);
 
-  const handleUpdateTask = async (updatedData) => {
-    const taskId = updatedData._id || updatedData.id;
+  const handleUpdateTask = async (updated) => {
+    const tid = updated._id || updated.id;
     try {
-      if (updatedData._id) {
-        const res = await api.put(`/tasks/${taskId}`, {
-          title: updatedData.title, priority: updatedData.priority,
-          due: updatedData.due, description: updatedData.description,
-        });
-        setTasks((prev) => {
-          const updated = { ...prev };
-          for (const col in updated) updated[col] = updated[col].map(t => t._id === taskId ? res.data : t);
-          return updated;
-        });
+      if (updated._id) {
+        const res = await api.put(`/tasks/${tid}`, { title: updated.title, priority: updated.priority, due: updated.due, description: updated.description });
+        setTasks((p) => { const u = { ...p }; for (const c in u) u[c] = u[c].map(t => t._id === tid ? res.data : t); return u; });
       } else {
-        setTasks((prev) => {
-          const updated = { ...prev };
-          for (const col in updated) updated[col] = updated[col].map(t => t.id === taskId ? { ...t, ...updatedData } : t);
-          return updated;
-        });
+        setTasks((p) => { const u = { ...p }; for (const c in u) u[c] = u[c].map(t => t.id === tid ? { ...t, ...updated } : t); return u; });
       }
       toast.success("Task updated!");
-    } catch {
-      toast.error("Failed to update task.");
-    }
+    } catch { toast.error("Failed to update task."); }
   };
 
-  const handleOpenDeleteConfirm = (column, taskId) => setTaskToDelete({ column, taskId });
-
+  const openDeleteConfirm = (col, id) => setTaskToDelete({ column: col, taskId: id });
   const confirmDelete = async () => {
     if (!taskToDelete) return;
-    const { column, taskId } = taskToDelete;
     setIsDeleting(true);
     try {
-      if (typeof taskId === "string") await api.delete(`/tasks/${taskId}`);
-      setTasks((prev) => ({ ...prev, [column]: prev[column].filter(t => (t._id || t.id) !== taskId) }));
+      if (typeof taskToDelete.taskId === "string") await api.delete(`/tasks/${taskToDelete.taskId}`);
+      setTasks((p) => ({ ...p, [taskToDelete.column]: p[taskToDelete.column].filter(t => (t._id || t.id) !== taskToDelete.taskId) }));
       toast.success("Task deleted.");
-    } catch {
-      toast.error("Failed to delete task.");
-    } finally {
-      setIsDeleting(false);
-      setTaskToDelete(null);
-    }
+    } catch { toast.error("Failed to delete task."); }
+    finally { setIsDeleting(false); setTaskToDelete(null); }
   };
 
-  const handleDragStart = (event) => {
-    for (const col in tasks) {
-      const found = tasks[col].find(t => (t._id || t.id) === event.active.id);
-      if (found) { setActiveTask(found); break; }
-    }
+  /* drag */
+  const handleDragStart = (e) => {
+    for (const c in tasks) { const f = tasks[c].find(t => (t._id || t.id) === e.active.id); if (f) { setActiveTask(f); break; } }
   };
 
-  const handleDragEnd = async (event) => {
-    const { active, over } = event;
+  const handleDragEnd = async (e) => {
+    const { active, over } = e;
     setActiveTask(null);
     if (!over || active.id === over.id) return;
-    const activeId = active.id;
-    const overId = over.id;
-    let sourceColumn = null, draggedTask = null, sourceIndex = -1;
-    for (const col in tasks) {
-      const index = tasks[col].findIndex(t => (t._id || t.id) === activeId);
-      if (index !== -1) { sourceColumn = col; draggedTask = tasks[col][index]; sourceIndex = index; break; }
-    }
-    if (!sourceColumn) return;
-    let destinationColumn = null, destinationIndex = -1;
-    for (const col in tasks) {
-      const index = tasks[col].findIndex(t => (t._id || t.id) === overId);
-      if (index !== -1) { destinationColumn = col; destinationIndex = index; break; }
-    }
-    if (!destinationColumn) {
-      if (["todo","inProgress","done"].includes(overId)) { destinationColumn = overId; destinationIndex = tasks[overId].length; }
-      else return;
-    }
-    setTasks((prev) => {
-      if (sourceColumn === destinationColumn) return { ...prev, [sourceColumn]: arrayMove(prev[sourceColumn], sourceIndex, destinationIndex) };
-      const updated = { ...prev };
-      updated[sourceColumn] = updated[sourceColumn].filter(t => (t._id || t.id) !== activeId);
-      const movedTask = { ...draggedTask, status: destinationColumn };
-      updated[destinationColumn] = [...updated[destinationColumn].slice(0, destinationIndex), movedTask, ...updated[destinationColumn].slice(destinationIndex)];
-      return updated;
+
+    let srcCol = null, dragged = null, srcIdx = -1;
+    for (const c in tasks) { const i = tasks[c].findIndex(t => (t._id || t.id) === active.id); if (i !== -1) { srcCol = c; dragged = tasks[c][i]; srcIdx = i; break; } }
+    if (!srcCol) return;
+
+    let dstCol = null, dstIdx = -1;
+    for (const c in tasks) { const i = tasks[c].findIndex(t => (t._id || t.id) === over.id); if (i !== -1) { dstCol = c; dstIdx = i; break; } }
+    if (!dstCol) { if (["todo","inProgress","done"].includes(over.id)) { dstCol = over.id; dstIdx = tasks[over.id].length; } else return; }
+
+    setTasks((p) => {
+      if (srcCol === dstCol) return { ...p, [srcCol]: arrayMove(p[srcCol], srcIdx, dstIdx) };
+      const u = { ...p };
+      u[srcCol] = u[srcCol].filter(t => (t._id || t.id) !== active.id);
+      const moved = { ...dragged, status: dstCol };
+      u[dstCol] = [...u[dstCol].slice(0, dstIdx), moved, ...u[dstCol].slice(dstIdx)];
+      return u;
     });
-    if (sourceColumn !== destinationColumn && typeof activeId === "string") {
+
+    if (srcCol !== dstCol && typeof active.id === "string") {
       try {
-        await api.put(`/tasks/${activeId}`, { title: draggedTask.title, priority: draggedTask.priority, due: draggedTask.due, status: destinationColumn });
-        toast.success(`Moved to "${COLUMNS.find(c => c.id === destinationColumn)?.label}"`);
+        await api.put(`/tasks/${active.id}`, { title: dragged.title, priority: dragged.priority, due: dragged.due, status: dstCol });
+        toast.success(`Moved to "${COLUMNS.find(c => c.id === dstCol)?.label}"`);
       } catch {
-        toast.error("Failed to move task. Reverting...");
-        setTasks((prev) => {
-          const reverted = { ...prev };
-          reverted[destinationColumn] = reverted[destinationColumn].filter(t => (t._id || t.id) !== activeId);
-          reverted[sourceColumn] = [draggedTask, ...reverted[sourceColumn]];
-          return reverted;
-        });
+        toast.error("Failed to move task.");
+        setTasks((p) => { const r = { ...p }; r[dstCol] = r[dstCol].filter(t => (t._id || t.id) !== active.id); r[srcCol] = [dragged, ...r[srcCol]]; return r; });
       }
     }
   };
 
-  const totalTasks = tasks.todo.length + tasks.inProgress.length + tasks.done.length;
-  const dueTodayCount = [...tasks.todo, ...tasks.inProgress].filter(t => {
+  /* computed */
+  const total = tasks.todo.length + tasks.inProgress.length + tasks.done.length;
+  const dueToday = [...tasks.todo, ...tasks.inProgress].filter(t => {
     if (!t.due || t.due === "No due date") return false;
     return new Date(t.due).toDateString() === new Date().toDateString();
   }).length;
-  const completionRate = totalTasks > 0 ? Math.round((tasks.done.length / totalTasks) * 100) : 0;
+  const rate = total > 0 ? Math.round((tasks.done.length / total) * 100) : 0;
 
-  const applyFilters = (list) => list.filter(task => {
-    if (debouncedSearchQuery.trim() && !task.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase().trim())) return false;
+  /* filters */
+  const applyFilters = (list) => list.filter(t => {
+    if (debouncedSearch.trim() && !t.title.toLowerCase().includes(debouncedSearch.toLowerCase().trim())) return false;
     if (activeFilters.length === 0) return true;
     return activeFilters.some(f => {
-      if (f === "high") return task.priority === "high";
-      if (f === "medium") return task.priority === "medium";
-      if (f === "low") return task.priority === "low";
-      if (f === "dueToday") { if (!task.due || task.due === "No due date") return false; return new Date(task.due).toDateString() === new Date().toDateString(); }
-      if (f === "overdue") { if (!task.due || task.due === "No due date") return false; return new Date(task.due) < new Date(new Date().toDateString()); }
+      if (f === "high" || f === "medium" || f === "low") return t.priority === f;
+      if (f === "dueToday") { if (!t.due || t.due === "No due date") return false; return new Date(t.due).toDateString() === new Date().toDateString(); }
+      if (f === "overdue") { if (!t.due || t.due === "No due date") return false; return new Date(t.due) < new Date(new Date().toDateString()); }
       return false;
     });
   });
@@ -241,96 +184,93 @@ export default function Dashboard() {
     });
   };
 
-  const filteredTasks = {
-    todo: sortTasks(applyFilters(tasks.todo)),
+  const filtered = {
+    todo:       sortTasks(applyFilters(tasks.todo)),
     inProgress: sortTasks(applyFilters(tasks.inProgress)),
-    done: sortTasks(applyFilters(tasks.done)),
+    done:       sortTasks(applyFilters(tasks.done)),
   };
 
+  /* ── Error state ──────────────────────────────────────── */
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8 text-center animate-page-in">
-        <div className="glass-panel p-8 max-w-sm">
-          <p className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">System Error</p>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">{error}</p>
-          <button onClick={() => window.location.reload()} className="glass-button w-full px-4 py-2.5 text-sm">
-            Reload Interface
-          </button>
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="glass-panel p-8 max-w-sm text-center">
+          <p className="text-base font-bold text-slate-800 dark:text-slate-200 mb-2">Something went wrong</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{error}</p>
+          <button onClick={() => window.location.reload()} className="glass-button w-full px-4 py-2.5">Reload</button>
         </div>
       </div>
     );
   }
 
+  /* ── Main render ──────────────────────────────────────── */
   return (
-    <div className="flex-1 animate-page-in">
-      <div className="page-container py-8 flex flex-col gap-6">
-        {/* Header */}
+    <div className="flex-1">
+      <div className="page-container py-6 flex flex-col gap-6">
+
+        {/* ─ Header ───────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-aurora-1 to-aurora-3 bg-clip-text text-transparent tracking-tight">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
               Welcome, {user?.name || "User"}
             </h1>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-              You have <span className="font-bold text-slate-700 dark:text-slate-200">{totalTasks}</span> tasks total
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">{total}</span> tasks total
             </p>
           </div>
           <button
             onClick={() => { setEditingTask(null); setIsModalOpen(true); }}
-             className="self-start sm:self-auto glass-button flex items-center gap-2 px-5 py-2.5 shadow-md shadow-aurora-1/20"
+            className="self-start sm:self-auto glass-button flex items-center gap-2 px-5 py-2.5"
           >
-            <Plus className="w-4 h-4" />
-            New Task
+            <Plus className="w-4 h-4" /> New Task
           </button>
         </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        {/* ─ Stat cards ───────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: "Total", value: totalTasks, icon: <ClipboardList className="w-5 h-5 text-slate-700 dark:text-slate-200" />, color: "bg-slate-100 dark:bg-slate-800" },
-            { label: "In Progress", value: tasks.inProgress.length, icon: <ListTodo className="w-5 h-5 text-amber-600 dark:text-amber-400" />, color: "bg-amber-100 dark:bg-amber-900/40" },
-            { label: "Due Today", value: dueTodayCount, icon: <Clock className="w-5 h-5 text-aurora-1" />, color: "bg-sky-100 dark:bg-sky-900/40" },
-            { label: "Completed", value: tasks.done.length, icon: <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />, color: "bg-emerald-100 dark:bg-emerald-900/40" },
-          ].map((stat) => (
-            <div key={stat.label} className="glass-panel p-4 flex items-center gap-4 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors">
-               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${stat.color}`}>
-                {stat.icon}
+            { label: "Total",       value: total,                icon: ClipboardList, accent: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" },
+            { label: "In Progress", value: tasks.inProgress.length, icon: ListTodo,    accent: "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400" },
+            { label: "Due Today",   value: dueToday,              icon: Clock,        accent: "bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400" },
+            { label: "Completed",   value: tasks.done.length,     icon: CheckCircle2, accent: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400" },
+          ].map((s) => (
+            <div key={s.label} className="glass-card p-4 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s.accent}`}>
+                <s.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-tight">{stat.value}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{s.label}</p>
+                <p className="text-xl font-bold text-slate-800 dark:text-white leading-tight">{s.value}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Progress bar */}
-        {totalTasks > 0 && (
-          <div className="glass-panel px-5 py-4">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Completion</span>
-              <span className="text-sm font-bold text-aurora-1">{completionRate}%</span>
+        {/* ─ Progress bar ─────────────────────────────── */}
+        {total > 0 && (
+          <div className="glass-card px-5 py-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Completion</span>
+              <span className="text-sm font-bold text-aurora-1">{rate}%</span>
             </div>
-            <div className="w-full h-2 bg-slate-200/50 dark:bg-slate-800/50 rounded-full overflow-hidden border border-slate-300/30 dark:border-white/10">
-              <div
-                className="h-full bg-gradient-to-r from-aurora-1 to-aurora-2 transition-all duration-500 ease-out"
-                style={{ width: `${completionRate}%` }}
-              />
+            <div className="w-full h-2 bg-slate-200/50 dark:bg-slate-800/50 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-aurora-1 to-aurora-2 rounded-full transition-all duration-500" style={{ width: `${rate}%` }} />
             </div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2 text-right">{tasks.done.length} of {totalTasks} finished</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-right">{tasks.done.length} of {total}</p>
           </div>
         )}
 
-        {/* Search & Filters */}
-        <div className="glass-panel p-4 flex flex-col gap-4">
+        {/* ─ Search & filters ─────────────────────────── */}
+        <div className="glass-card p-4 flex flex-col gap-3">
           {/* Search */}
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200/50 dark:border-white/10 focus-within:ring-2 focus-within:ring-aurora-1/50 transition-all">
+          <div className="flex items-center gap-2.5 glass-input">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks..."
-              className="flex-1 text-sm font-medium bg-transparent outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400"
+              placeholder="Search tasks…"
+              className="flex-1 text-sm bg-transparent outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-aurora-1 transition-colors">
@@ -339,7 +279,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Filters row */}
+          {/* Chips + sort */}
           <div className="flex flex-wrap items-center gap-2">
             {FILTER_CHIPS.map((chip) => {
               const active = activeFilters.includes(chip.id);
@@ -347,10 +287,10 @@ export default function Dashboard() {
                 <button
                   key={chip.id}
                   onClick={() => toggleFilter(chip.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all duration-300 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all duration-200 ${
                     active
-                      ? "bg-slate-800 border-slate-800 text-white dark:bg-white dark:border-white dark:text-slate-900 shadow-md transform scale-[0.98]"
-                      : "bg-white/50 dark:bg-slate-900/50 border-slate-200/50 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800"
+                      ? "bg-slate-800 border-slate-800 text-white dark:bg-white dark:border-white dark:text-slate-900 shadow-sm"
+                      : "bg-white/40 dark:bg-slate-900/40 border-slate-200/50 dark:border-white/[0.06] text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-800/60"
                   }`}
                 >
                   {chip.label}
@@ -365,13 +305,13 @@ export default function Dashboard() {
                   onClick={() => { setActiveFilters([]); setSearchQuery(""); }}
                   className="text-xs font-semibold text-slate-500 hover:text-aurora-1 transition-colors flex items-center gap-1"
                 >
-                  <X className="w-3 h-3" />Clear
+                  <X className="w-3 h-3" /> Clear
                 </button>
               )}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-xs font-semibold border border-slate-200/50 dark:border-white/10 rounded-lg bg-white/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300 py-1.5 pl-3 pr-8 outline-none focus:ring-2 focus:ring-aurora-1/50 cursor-pointer transition-all appearance-none shadow-sm"
+                className="text-xs font-semibold border border-slate-200/50 dark:border-white/[0.06] rounded-lg bg-white/40 dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 py-1.5 pl-3 pr-7 outline-none focus:ring-2 focus:ring-aurora-1/40 cursor-pointer appearance-none"
               >
                 <option value="manual">Manual order</option>
                 <option value="priority">Priority</option>
@@ -381,64 +321,63 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Kanban Board */}
-        {totalTasks === 0 && !loading && !debouncedSearchQuery && activeFilters.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center glass-panel border-dashed border-2">
-            <div className="w-16 h-16 bg-gradient-to-br from-aurora-1 to-aurora-2 rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-aurora-1/20">
-              <ClipboardList className="w-8 h-8 text-white" />
+        {/* ─ Kanban Board ─────────────────────────────── */}
+        {total === 0 && !loading && !debouncedSearch && activeFilters.length === 0 ? (
+          <div className="glass-panel border-dashed flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-14 h-14 bg-gradient-to-br from-aurora-1 to-aurora-2 rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-aurora-1/20">
+              <ClipboardList className="w-7 h-7 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">No Tasks Yet</h2>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">Create your first task to get started.</p>
-            <button
-              onClick={() => { setEditingTask(null); setIsModalOpen(true); }}
-              className="glass-button flex items-center gap-2 px-6 py-3 shadow-md shadow-aurora-1/20"
-            >
-              <Plus className="w-4 h-4" />
-              Create Task
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1.5">No tasks yet</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Create your first task to get started.</p>
+            <button onClick={() => { setEditingTask(null); setIsModalOpen(true); }} className="glass-button flex items-center gap-2 px-5 py-2.5">
+              <Plus className="w-4 h-4" /> Create Task
             </button>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-              {COLUMNS.map((col) => (
-                <DroppableColumn key={col.id} id={col.id}>
-                  <div className="glass-panel bg-white/40 dark:bg-slate-900/40 flex flex-col min-h-[480px]">
-                    {/* Column header */}
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200/50 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-t-2xl">
-                      <div className="flex items-center gap-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
-                        <span className={`w-2.5 h-2.5 rounded-full ${col.dotColor}`} />
-                        {col.label}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {COLUMNS.map((col) => {
+                const ColIcon = col.icon;
+                return (
+                  <DroppableColumn key={col.id} id={col.id}>
+                    <div className="glass-panel flex flex-col min-h-[480px] overflow-hidden">
+                      {/* Column header */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/40 dark:border-white/[0.06] bg-white/30 dark:bg-white/[0.03]">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                          <span className={`w-2 h-2 rounded-full ${col.dot}`} />
+                          {col.label}
+                        </div>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100/60 dark:bg-slate-800/60 px-2.5 py-0.5 rounded-md">
+                          {tasks[col.id].length}
+                        </span>
                       </div>
-                      <span className="text-xs font-bold bg-slate-200/50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-full border border-slate-300/30 dark:border-white/10">
-                        {tasks[col.id].length}
-                      </span>
-                    </div>
 
-                    {/* Tasks */}
-                    <SortableContext items={filteredTasks[col.id].map(t => t._id || t.id)} strategy={verticalListSortingStrategy}>
-                      <div className="flex flex-col gap-2.5 p-3 flex-1">
-                        {loading ? (
-                          <><SkeletonCard /><SkeletonCard /><SkeletonCard /></>
-                        ) : filteredTasks[col.id].length === 0 ? (
-                          <div className="flex-1 flex items-center justify-center py-12">
-                            <p className="text-xs text-slate-400 dark:text-slate-600">{col.emptyText}</p>
-                          </div>
-                        ) : (
-                          filteredTasks[col.id].map((task) => (
-                            <SortableItem key={task._id || task.id} id={task._id || task.id}>
-                              <TaskCard
-                                task={task}
-                                onEdit={() => handleOpenEdit(task)}
-                                onDelete={() => handleOpenDeleteConfirm(col.id, task._id || task.id)}
-                              />
-                            </SortableItem>
-                          ))
-                        )}
-                      </div>
-                    </SortableContext>
-                  </div>
-                </DroppableColumn>
-              ))}
+                      {/* Cards list */}
+                      <SortableContext items={filtered[col.id].map(t => t._id || t.id)} strategy={verticalListSortingStrategy}>
+                        <div className="flex-1 flex flex-col gap-2 p-3">
+                          {loading ? (
+                            <><SkeletonCard /><SkeletonCard /><SkeletonCard /></>
+                          ) : filtered[col.id].length === 0 ? (
+                            <div className="flex-1 flex items-center justify-center py-12">
+                              <p className="text-xs text-slate-400 dark:text-slate-600">{col.empty}</p>
+                            </div>
+                          ) : (
+                            filtered[col.id].map((t) => (
+                              <SortableItem key={t._id || t.id} id={t._id || t.id}>
+                                <TaskCard
+                                  task={t}
+                                  onEdit={() => openEdit(t)}
+                                  onDelete={() => openDeleteConfirm(col.id, t._id || t.id)}
+                                />
+                              </SortableItem>
+                            ))
+                          )}
+                        </div>
+                      </SortableContext>
+                    </div>
+                  </DroppableColumn>
+                );
+              })}
             </div>
 
             <DragOverlay>
@@ -452,7 +391,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      <TaskFormModal isOpen={isModalOpen} onClose={handleCloseModal} onAddTask={handleAddTask} onEditTask={handleUpdateTask} editTask={editingTask} />
+      <TaskFormModal isOpen={isModalOpen} onClose={closeModal} onAddTask={handleAddTask} onEditTask={handleUpdateTask} editTask={editingTask} />
       <ConfirmModal
         isOpen={!!taskToDelete}
         onCancel={() => setTaskToDelete(null)}
