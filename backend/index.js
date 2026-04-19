@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const errorHandler = require("./middleware/error");
 
 dotenv.config();
 
@@ -32,6 +33,15 @@ mongoose
 app.use("/api/auth", require("./routes/auth"));
 app.use('/api/tasks', require('./routes/tasks'));
 
-app.listen(PORT, () => {
+// Global Error Handler must be after all routes
+app.use(errorHandler);
+
+const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+// Handle unhandled Promise rejections safely
+process.on("unhandledRejection", (err, promise) => {
+  console.error(`[UNHANDLED REJECTION] Error: ${err.message}`);
+  // In production, might want 'server.close(() => process.exit(1))'
 });

@@ -1,5 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useContext } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useContext, useState } from "react";
 import { AuthContext } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import {
@@ -8,14 +8,32 @@ import {
   LogIn,
   UserPlus,
   LayoutDashboard,
-  User,
   BarChart3,
+  User,
   Sun,
   Moon,
   Menu,
   X as CloseIcon,
 } from "lucide-react";
-import { useState } from "react";
+
+const NavLink = ({ to, icon: Icon, children, onClick }) => {
+  const { pathname } = useLocation();
+  const isActive = pathname === to;
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`flex items-center gap-2 text-sm font-medium px-4 py-2 transition-all duration-300 rounded-xl ${
+        isActive
+          ? "bg-white/20 dark:bg-white/10 text-slate-900 dark:text-white shadow-sm"
+          : "text-slate-600 dark:text-slate-300 hover:bg-white/10 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      {children}
+    </Link>
+  );
+};
 
 export default function Navbar() {
   const { user, logout } = useContext(AuthContext);
@@ -32,165 +50,100 @@ export default function Navbar() {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <nav className="bg-indigo-600 dark:bg-gray-900 text-white shadow-lg border-b border-indigo-700 dark:border-gray-700 transition-colors duration-200">
-      <div className="page-container">
-        <div className="flex justify-between items-center h-16">
+    <header className="sticky top-4 z-40 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6 transition-all duration-500">
+      <div className="glass-panel px-4 py-3 sm:px-6 sm:py-3 flex items-center justify-between">
+        <div className="flex items-center justify-between w-full h-10">
           {/* Logo */}
           <Link
             to="/dashboard"
-            className="flex items-center gap-2 text-xl font-bold tracking-tight hover:text-indigo-200 dark:hover:text-gray-300 transition-colors"
+            className="flex items-center gap-3 font-semibold text-slate-900 dark:text-white hover:opacity-80 transition-opacity"
           >
-            <LayoutGrid className="w-6 h-6" />
-            <span>TaskFlow</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-aurora-1 to-aurora-3 flex items-center justify-center text-white shadow-lg shadow-aurora-1/20">
+              <LayoutGrid className="w-4 h-4" />
+            </div>
+            <span className="text-lg tracking-wide">SYS.BOARD_</span>
           </Link>
 
-          {/* Right side */}
-          <div className="flex items-center gap-x-2 sm:gap-x-3">
-            {/* Dark mode toggle */}
+          {/* Desktop Nav */}
+          <div className="hidden sm:flex items-center gap-1">
+            {user ? (
+              <>
+                <NavLink to="/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
+                <NavLink to="/stats" icon={BarChart3}>Stats</NavLink>
+                <NavLink to="/profile" icon={User}>Profile</NavLink>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login" icon={LogIn}>Login</NavLink>
+                <NavLink to="/register" icon={UserPlus}>Register</NavLink>
+              </>
+            )}
+          </div>
+
+          {/* Right Controls */}
+          <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              className="flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-700/60 dark:bg-gray-700 hover:bg-indigo-800 dark:hover:bg-gray-600 transition-colors"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-300 hover:bg-white/10 dark:hover:bg-white/5 transition-all duration-300"
+              title={isDark ? "Light mode" : "Dark mode"}
             >
-              {isDark ? (
-                <Sun className="w-4 h-4 text-yellow-300" />
-              ) : (
-                <Moon className="w-4 h-4 text-indigo-200" />
-              )}
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
 
             {user && (
               <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex sm:hidden items-center justify-center w-10 h-10 rounded-xl bg-indigo-700/60 dark:bg-gray-800 hover:bg-indigo-800 dark:hover:bg-gray-700 transition-all duration-300 relative group overflow-hidden"
-                aria-label="Toggle menu"
+                onClick={handleLogout}
+                className="hidden sm:flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 px-4 py-2 rounded-xl transition-all duration-300"
               >
-                <div className="relative w-6 h-6">
-                  <Menu 
-                    className={`absolute inset-0 w-6 h-6 text-white transition-all duration-300 transform ${
-                      isMenuOpen ? "opacity-0 rotate-90 scale-50" : "opacity-100 rotate-0 scale-100"
-                    }`} 
-                  />
-                  <CloseIcon 
-                    className={`absolute inset-0 w-6 h-6 text-white transition-all duration-300 transform ${
-                      isMenuOpen ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50"
-                    }`} 
-                  />
-                </div>
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
               </button>
             )}
 
-            {user ? (
-              <>
-                {/* Dashboard link */}
-                <Link
-                  to="/dashboard"
-                  className="hidden sm:flex items-center gap-1.5 text-sm font-medium hover:text-indigo-200 dark:hover:text-gray-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-700 dark:hover:bg-gray-700"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </Link>
-
-                {/* Stats link */}
-                <Link
-                  to="/stats"
-                  className="hidden sm:flex items-center gap-1.5 text-sm font-medium hover:text-indigo-200 dark:hover:text-gray-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-700 dark:hover:bg-gray-700"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Stats
-                </Link>
-
-                {/* User info: Hidden in main bar on mobile (use hamburger), visible on desktop */}
-                <Link
-                  to="/profile"
-                  className="hidden sm:flex items-center gap-2 text-sm font-medium hover:bg-indigo-700 dark:hover:bg-gray-600 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                >
-                  <User className="w-4 h-4 text-indigo-200 dark:text-gray-400" />
-                  <span className="hidden sm:block">{user.name || "User"}</span>
-                </Link>
-
-                {/* Logout */}
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1.5 text-sm font-medium hover:bg-indigo-900 dark:hover:bg-gray-600 px-4 py-1.5 rounded-lg transition-colors shadow-md"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:block">Logout</span>
-                </button>
-              </>
-            ) : (
-              <>
-                {/* Login */}
-                <Link
-                  to="/login"
-                  className="flex items-center gap-1.5 text-sm font-medium hover:text-indigo-200 dark:hover:text-gray-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-700 dark:hover:bg-gray-700"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Login
-                </Link>
-
-                {/* Register */}
-                <Link
-                  to="/register"
-                  className="flex items-center gap-1.5 text-sm font-medium bg-gray-50 dark:bg-gray-700 text-indigo-600 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-gray-600 px-4 py-1.5 rounded-lg transition-colors shadow-md font-semibold"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Register
-                </Link>
-              </>
+            {user && (
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="sm:hidden w-10 h-10 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-300 hover:bg-white/10 dark:hover:bg-white/5 transition-all duration-300"
+              >
+                <div className="relative w-5 h-5">
+                  <Menu
+                    className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${
+                      isMenuOpen ? "opacity-0 rotate-90 scale-50" : "opacity-100 rotate-0 scale-100"
+                    }`}
+                  />
+                  <CloseIcon
+                    className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${
+                      isMenuOpen ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50"
+                    }`}
+                  />
+                </div>
+              </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu */}
       {user && (
-        <div 
-          className={`
-            sm:hidden bg-indigo-700 dark:bg-gray-950/95 backdrop-blur-md border-t border-indigo-500/30 dark:border-gray-800 
-            overflow-hidden transition-all duration-500 ease-in-out
-            ${isMenuOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"}
-          `}
+        <div
+          className={`sm:hidden overflow-hidden transition-all duration-300 ease-in-out mt-2 ${
+            isMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+          }`}
         >
-          <div className="px-6 py-8 space-y-4">
-            <Link
-              to="/dashboard"
-              onClick={closeMenu}
-              className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-indigo-600 dark:hover:bg-gray-800 transition-all duration-300 font-semibold transform ${isMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"} delay-100`}
+          <div className="glass-panel py-3 px-4 flex flex-col gap-1">
+            <NavLink to="/dashboard" icon={LayoutDashboard} onClick={closeMenu}>Dashboard</NavLink>
+            <NavLink to="/stats" icon={BarChart3} onClick={closeMenu}>Stats</NavLink>
+            <NavLink to="/profile" icon={User} onClick={closeMenu}>Profile</NavLink>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all mt-1"
             >
-              <LayoutDashboard className="w-5 h-5 text-indigo-200 dark:text-gray-400" />
-              Dashboard
-            </Link>
-            <Link
-              to="/stats"
-              onClick={closeMenu}
-              className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-indigo-600 dark:hover:bg-gray-800 transition-all duration-300 font-semibold transform ${isMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"} delay-150`}
-            >
-              <BarChart3 className="w-5 h-5 text-indigo-200 dark:text-gray-400" />
-              Stats
-            </Link>
-            <Link
-              to="/profile"
-              onClick={closeMenu}
-              className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-indigo-600 dark:hover:bg-gray-800 transition-all duration-300 font-semibold transform ${isMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"} delay-200`}
-            >
-              <User className="w-5 h-5 text-indigo-200 dark:text-gray-400" />
-              My Profile
-            </Link>
-            <div className={`pt-4 mt-4 border-t border-indigo-600 dark:border-gray-800 transform transition-all duration-500 delay-300 ${isMenuOpen ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}`}>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-red-100 hover:bg-red-500/20 dark:hover:bg-red-900/20 transition-all duration-300 font-bold group"
-              >
-                <div className="p-2 bg-red-500/20 rounded-lg group-hover:scale-110 transition-transform">
-                  <LogOut className="w-5 h-5 text-red-300" />
-                </div>
-                Logout
-              </button>
-            </div>
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
           </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 }

@@ -2,14 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 import { toast } from "react-toastify";
-import {
-  BarChart3,
-  CheckCircle2,
-  ListTodo,
-  AlertCircle,
-  Flag,
-  Loader2,
-} from "lucide-react";
+import { BarChart3, CheckCircle2, ListTodo, AlertCircle, Flag, Loader2 } from "lucide-react";
 
 export default function Stats() {
   const [tasks, setTasks] = useState([]);
@@ -23,7 +16,6 @@ export default function Stats() {
         const res = await api.get("/tasks");
         setTasks(res.data);
       } catch (err) {
-        console.error("Stats fetch error:", err);
         if (err.response?.status === 401) {
           localStorage.removeItem("token");
           navigate("/login");
@@ -39,8 +31,8 @@ export default function Stats() {
 
   if (loading) {
     return (
-      <div className="flex-1 min-h-[calc(100vh-4rem)] flex items-center justify-center p-10 bg-gray-100 dark:bg-gray-950">
-        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+      <div className="flex-1 flex items-center justify-center p-10 bg-slate-50 dark:bg-industrial-900">
+        <Loader2 className="w-8 h-8 text-industrial-900 dark:text-industrial-100 animate-spin" />
       </div>
     );
   }
@@ -64,145 +56,87 @@ export default function Stats() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-4rem)] bg-gray-100 dark:bg-gray-950 transition-colors duration-200">
-      <div className="page-container py-10 flex flex-col gap-8 mx-auto">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl">
-            <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-              Analytics Overview
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm sm:text-base">
-              Your task completion metrics and priority distribution
-            </p>
-          </div>
+    <div className="flex-1 animate-page-in">
+      <div className="page-container py-8 flex flex-col gap-6 mx-auto max-w-5xl">
+        
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-aurora-1 to-aurora-3 bg-clip-text text-transparent tracking-tight">System Analytics</h1>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Data tracking and distribution</p>
         </div>
 
         {/* Top KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-6 flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-lg shrink-0">
-                <ListTodo className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          {[
+            { label: "Total Tasks", value: totalTasks, icon: <ListTodo className="w-5 h-5 text-slate-700 dark:text-slate-200" />, color: "bg-slate-100 dark:bg-slate-800" },
+            { label: "Completed", value: completedTasks, icon: <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />, color: "bg-emerald-100 dark:bg-emerald-900/40" },
+            { label: "Done Rate", value: `${completionRate}%`, icon: <BarChart3 className="w-5 h-5 text-aurora-1" />, color: "bg-sky-100 dark:bg-sky-900/40" },
+            { label: "Overdue", value: overdueTasks, icon: <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />, color: "bg-red-100 dark:bg-red-900/40" },
+          ].map((stat, i) => (
+            <div key={i} className="glass-panel p-5 flex flex-col hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${stat.color}`}>
+                  {stat.icon}
+                </div>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">{stat.label}</span>
               </div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Total</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
             </div>
-            <p className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">{totalTasks}</p>
-          </div>
-          
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-6 flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex items-center justify-center w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-lg shrink-0">
-                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-              </div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Completed</p>
-            </div>
-            <p className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">{completedTasks}</p>
-          </div>
-          
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-6 flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex items-center justify-center w-8 h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg shrink-0">
-                <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Done Rate</p>
-            </div>
-            <p className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">{completionRate}%</p>
-          </div>
-          
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-6 flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900/40 rounded-lg shrink-0">
-                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-              </div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Overdue</p>
-            </div>
-            <p className="text-4xl font-extrabold text-gray-900 dark:text-gray-100">{overdueTasks}</p>
-          </div>
+          ))}
         </div>
 
-        {/* Status & Priority Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {/* Status Breakdown */}
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-8">
-            <h3 className="flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-gray-200 mb-8">
-              <ListTodo className="w-5 h-5 text-indigo-500" />
-              Tasks by Status
+          <div className="glass-panel p-6 flex flex-col gap-6">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">
+              <ListTodo className="w-4 h-4 text-aurora-1" /> Tasks by status
             </h3>
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">To Do</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md">{todoTasks}</span>
+            
+            <div className="space-y-5">
+              {[
+                { label: "To do", count: todoTasks, color: "bg-slate-400" },
+                { label: "In progress", count: inProgressTasks, color: "bg-amber-400" },
+                { label: "Done", count: completedTasks, color: "bg-emerald-500" },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.label}</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.count}</span>
+                  </div>
+                  <div className="w-full bg-slate-200/50 dark:bg-slate-800/50 rounded-full h-2 overflow-hidden border border-slate-300/30 dark:border-white/10">
+                    <div className={`${item.color} h-full rounded-full transition-all duration-500`} style={{ width: `${totalTasks ? (item.count/totalTasks)*100 : 0}%` }}></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
-                  <div className="bg-indigo-400 h-full rounded-full transition-all duration-1000" style={{ width: `${totalTasks ? (todoTasks/totalTasks)*100 : 0}%` }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">In Progress</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md">{inProgressTasks}</span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
-                  <div className="bg-orange-400 h-full rounded-full transition-all duration-1000" style={{ width: `${totalTasks ? (inProgressTasks/totalTasks)*100 : 0}%` }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">Done</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md">{completedTasks}</span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
-                  <div className="bg-green-400 h-full rounded-full transition-all duration-1000" style={{ width: `${totalTasks ? (completedTasks/totalTasks)*100 : 0}%` }}></div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* Priority Breakdown */}
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md p-8">
-            <h3 className="flex items-center gap-2 text-lg font-bold text-gray-800 dark:text-gray-200 mb-8">
-              <Flag className="w-5 h-5 text-pink-500" />
-              Tasks by Priority
+          <div className="glass-panel p-6 flex flex-col gap-6">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">
+              <Flag className="w-4 h-4 text-aurora-1" /> Tasks by priority
             </h3>
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-red-600 dark:text-red-400">High Priority</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md">{priorityCounts.high}</span>
+            
+            <div className="space-y-5">
+              {[
+                { label: "High", count: priorityCounts.high, color: "bg-red-500" },
+                { label: "Medium", count: priorityCounts.medium, color: "bg-amber-400" },
+                { label: "Low", count: priorityCounts.low, color: "bg-emerald-500" },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.label}</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.count}</span>
+                  </div>
+                  <div className="w-full bg-slate-200/50 dark:bg-slate-800/50 rounded-full h-2 overflow-hidden border border-slate-300/30 dark:border-white/10">
+                    <div className={`${item.color} h-full rounded-full transition-all duration-500`} style={{ width: `${totalTasks ? (item.count/totalTasks)*100 : 0}%` }}></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
-                  <div className="bg-red-500 h-full rounded-full transition-all duration-1000" style={{ width: `${totalTasks ? (priorityCounts.high/totalTasks)*100 : 0}%` }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">Medium Priority</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md">{priorityCounts.medium}</span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
-                  <div className="bg-yellow-500 h-full rounded-full transition-all duration-1000" style={{ width: `${totalTasks ? (priorityCounts.medium/totalTasks)*100 : 0}%` }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">Low Priority</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md">{priorityCounts.low}</span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
-                  <div className="bg-green-500 h-full rounded-full transition-all duration-1000" style={{ width: `${totalTasks ? (priorityCounts.low/totalTasks)*100 : 0}%` }}></div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
+        
       </div>
     </div>
   );

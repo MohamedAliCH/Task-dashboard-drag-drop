@@ -1,54 +1,47 @@
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
-export default function ConfirmModal({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  title, 
-  message, 
-  isSubmitting 
-}) {
+export default function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onCancel}
       />
-      
-      {/* Modal */}
-      <div className="relative w-full max-w-sm bg-gray-50 dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden transform transition-all translate-y-0 scale-100">
-        <div className="flex items-start gap-4 p-6">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 shrink-0">
-            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+
+      {/* Dialog */}
+      <div className="relative glass-panel w-full max-w-sm p-6 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-rose-400" />
+        <div className="flex items-start gap-4 mt-2">
+          <div className="w-10 h-10 rounded-xl bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
           </div>
-          <div className="flex-1 mt-0.5">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">
-              {title}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-lg">
+              {title || "Confirm Action"}
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-              {message}
-            </p>
+            {message && (
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                {message}
+              </p>
+            )}
           </div>
         </div>
-        
-        {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-gray-100/60 dark:bg-gray-800/60 border-t border-gray-200 dark:border-gray-700">
+
+        <div className="flex gap-3 mt-8 justify-end">
           <button
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent hover:border-gray-300 dark:hover:border-gray-600 rounded-xl transition-all disabled:opacity-50"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            disabled={isSubmitting}
-            className="flex items-center justify-center min-w-[80px] gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-md"
+            className="px-4 py-2 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+            Confirm
           </button>
         </div>
       </div>

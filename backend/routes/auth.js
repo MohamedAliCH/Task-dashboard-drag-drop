@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 //register
-router.post("/register", async(req,res)=>{
+router.post("/register", async(req,res,next)=>{
     const{name,email,password}=req.body;
     try{
         let user=await User.findOne({email});
@@ -26,13 +26,12 @@ router.post("/register", async(req,res)=>{
         });
 
     }catch(err){
-        console.error(err.message);
-        res.status(500).send("Server error");
+        next(err);
     }
 });
 
 //login
-router.post("/login", async(req,res)=>{
+router.post("/login", async(req,res,next)=>{
     const{email,password}=req.body;
     try{
         let user=await User.findOne({email});
@@ -51,9 +50,9 @@ router.post("/login", async(req,res)=>{
         });
         
     }catch(err){
-        console.error(err.message);
-        res.status(500).send("Server error");
+        next(err);
     }
 });
+
 
 module.exports=router;

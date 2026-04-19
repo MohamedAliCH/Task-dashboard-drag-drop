@@ -1,30 +1,35 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerSchema } from "../../lib/schema";
-import { useState, useContext } from "react";
+import { registerSchema } from "../../lib/schema.js";
+import { useContext, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext.jsx";
 import api from "../../lib/api.js";
 import { toast } from "react-toastify";
-import {
-  User,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  UserPlus,
-  AlertCircle,
-  LayoutGrid,
-  CheckCircle2,
-  Loader2,
-} from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, Loader2, AlertCircle } from "lucide-react";
+
+function Field({ label, id, error, children }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+        {label}
+      </label>
+      {children}
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-red-500">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          {error.message}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function Register() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const {
     register,
@@ -33,12 +38,7 @@ export default function Register() {
     reset,
   } = useForm({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   const onSubmit = async (data) => {
@@ -50,255 +50,116 @@ export default function Register() {
       });
       localStorage.setItem("token", res.data.token);
       login({ name: data.name, email: data.email });
-      toast.success("Account created! Welcome aboard 🎉");
+      toast.success("Account created! Welcome 🎉");
       reset();
       navigate("/dashboard");
     } catch (err) {
-      console.error("Registration failed:", err);
-      toast.error(
-        err.response?.data?.msg || "Registration failed. Please try again.",
-      );
+      toast.error(err.response?.data?.msg || "Registration failed. Please try again.");
     }
   };
 
-  // Reusable class builder for the flex input wrapper
-  const wrapperClass = (hasError) =>
-    `flex items-center gap-3 px-3 py-2.5 border rounded-xl transition-colors focus-within:ring-2 ${
-      hasError
-        ? "border-red-400 bg-red-50 dark:bg-red-900/20 focus-within:ring-red-400"
-        : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 focus-within:ring-indigo-400 focus-within:border-indigo-400"
-    }`;
-
-  const inputClass =
-    "flex-1 text-sm bg-transparent focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500";
-
-  const iconClass = (hasError) =>
-    `w-4 h-4 shrink-0 ${hasError ? "text-red-400" : "text-gray-400"}`;
+  const inputBase = "glass-input";
+  const inputError = "border-red-500 focus:ring-red-500/50";
 
   return (
-    <div className="flex-1 flex bg-gray-100 dark:bg-gray-950 transition-colors duration-200">
-      {/* Left panel – branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-indigo-600 flex-col items-center justify-center p-12 text-white">
-        <div className="max-w-md text-center space-y-10">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <LayoutGrid className="w-12 h-12" />
-            <span className="text-4xl font-bold tracking-tight">TaskFlow</span>
+    <div className="flex-1 flex items-center justify-center px-4 py-8 sm:py-16 animate-page-in">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-aurora-1 to-aurora-3 flex items-center justify-center text-white shadow-lg shadow-aurora-1/30 mb-5 relative group overflow-hidden">
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+            <svg className="w-6 h-6 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
           </div>
-          <p className="text-indigo-200 text-lg leading-relaxed">
-            Organize your work, track your progress, and get things done — all
-            in one place.
-          </p>
-          <div className="space-y-5 text-left mt-8">
-            {[
-              "Drag-and-drop Kanban board",
-              "Priority & due date tracking",
-              "Real-time task management",
-            ].map((feature) => (
-              <div key={feature} className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-indigo-300 shrink-0" />
-                <span className="text-indigo-100">{feature}</span>
-              </div>
-            ))}
-          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-aurora-1 to-aurora-3 bg-clip-text text-transparent tracking-tight">Create Account</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">Join our workspace platform</p>
         </div>
-      </div>
 
-      {/* Right panel – form */}
-      <div className="flex flex-1 items-center justify-center px-8 py-14 dark:bg-gray-950">
-        <div className="w-full max-w-md space-y-8">
-          {/* Header */}
-          <div className="text-center">
-            {/* Mobile logo */}
-            <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
-              <LayoutGrid className="w-7 h-7 text-indigo-600" />
-              <span className="text-2xl font-bold text-indigo-600">
-                TaskFlow
-              </span>
-            </div>
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-100 dark:bg-indigo-900/40 rounded-2xl mb-4">
-              <UserPlus className="w-7 h-7 text-indigo-600" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Create an account
-            </h2>
-            <p className="mt-2 text-gray-500 dark:text-gray-400 text-sm">
-              Start managing your tasks today — it's free.
-            </p>
-          </div>
-
-          {/* Form */}
+        {/* Card */}
+        <div className="glass-panel p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Full Name */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Full Name
-              </label>
-              <div
-                className={wrapperClass(!!errors.name)}
-              >
-                <User className={iconClass(!!errors.name)} />
+            <Field label="Full name" id="name" error={errors.name}>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   id="name"
                   type="text"
-                  placeholder="John Doe"
                   autoComplete="name"
-                  className={inputClass}
+                  placeholder="Jane Smith"
+                  className={`${inputBase} pl-9 ${errors.name ? inputError : ""}`}
                   {...register("name")}
                 />
               </div>
-              {errors.name && (
-                <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
+            </Field>
 
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Email Address
-              </label>
-              <div
-                className={wrapperClass(!!errors.email)}
-              >
-                <Mail className={iconClass(!!errors.email)} />
+            <Field label="Email address" id="email" error={errors.email}>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
                   autoComplete="email"
-                  className={inputClass}
+                  placeholder="you@example.com"
+                  className={`${inputBase} pl-9 ${errors.email ? inputError : ""}`}
                   {...register("email")}
                 />
               </div>
-              {errors.email && (
-                <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
+            </Field>
 
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Password
-              </label>
-              <div
-                className={wrapperClass(!!errors.password)}
-              >
-                <Lock className={iconClass(!!errors.password)} />
+            <Field label="Password" id="password" error={errors.password}>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Min. 6 characters"
                   autoComplete="new-password"
-                  className={inputClass}
+                  placeholder="Min. 6 characters"
+                  className={`${inputBase} pl-9 pr-10 ${errors.password ? inputError : ""}`}
                   {...register("password")}
                 />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
+                <button type="button" tabIndex={-1} onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
+            </Field>
 
-            {/* Confirm Password */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Confirm Password
-              </label>
-              <div
-                className={wrapperClass(!!errors.confirmPassword)}
-              >
-                <Lock className={iconClass(!!errors.confirmPassword)} />
+            <Field label="Confirm password" id="confirmPassword" error={errors.confirmPassword}>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Re-enter your password"
+                  type={showConfirm ? "text" : "password"}
                   autoComplete="new-password"
-                  className={inputClass}
+                  placeholder="Re-enter your password"
+                  className={`${inputBase} pl-9 pr-10 ${errors.confirmPassword ? inputError : ""}`}
                   {...register("confirmPassword")}
                 />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowConfirmPassword((v) => !v)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
+                <button type="button" tabIndex={-1} onClick={() => setShowConfirm(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.confirmPassword && (
-                <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {errors.confirmPassword.message}
-                </p>
-              )}
-            </div>
+            </Field>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition-colors shadow-md mt-2"
+              className="w-full glass-button flex items-center justify-center gap-2 py-3 mt-6 text-[15px] shadow-md shadow-aurora-1/20"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  Create Account
-                </>
-              )}
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSubmitting ? "Creating Account..." : "Sign Up"}
             </button>
           </form>
-
-          {/* Footer */}
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors"
-            >
-              Sign in here
-            </Link>
-          </p>
         </div>
+
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-8 font-medium">
+          Already have an account?{" "}
+          <Link to="/login" className="font-semibold text-aurora-1 hover:text-aurora-2 transition-colors">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );
